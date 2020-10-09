@@ -260,20 +260,19 @@ if __name__ == '__main__':
     st.sidebar.markdown(""" ### Stats """)
     st.sidebar.dataframe(stats_df)
 
+    st.sidebar.write('''
+        ### About
+
+        Football logs are used to create an interactive Streamlit web app that analyzes Messi and Ronaldo's game during LaLiga season 2017-18. 
+        The app compares both players' stats and shows their positions on the pitch.
+        
+        The app was developed by [adilmoujahid](https://github.com/adilmoujahid). ''')
+
+    st.sidebar.write('''
+    Checkout this [tutorial](http://adilmoujahid.com/posts/2020/06/streamlit-messi-ronaldo/) to learn how this app was built)
+    ''')
+
     st.image('./messi_ronaldo.png', use_column_width=True, output_format='PNG')
-
-    st.write('''
-    
-    
-    Football logs are used to create an interactive Streamlit web app that analyzes Messi and Ronaldo's game during LaLiga season 2017-18. 
-    The app compares both players' stats and shows their positions on the pitch.
-    The app was originally developed by [adilmoujahid](https://github.com/adilmoujahid). ''')
-
-    '''
-    Checkout out this [tutorial](http://adilmoujahid.com/posts/2020/06/streamlit-messi-ronaldo/) to learn how this app was built)
-
-    # Charts
-    '''
 
     tabs = bokeh.models.Tabs(
         tabs=[
