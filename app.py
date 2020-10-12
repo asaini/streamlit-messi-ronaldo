@@ -24,31 +24,38 @@ import streamlit as st
 from plots import *
 
 
+@st.cache()
+def calculate_stats(messi_events_data_df, ronaldo_events_data_df):
+    #Calculate Stats of both playters and structure them in a Pandas DataFrame
+    goals = [messi_events_data_df['goal'].sum(), ronaldo_events_data_df['goal'].sum()]
+    assists = [messi_events_data_df['assist'].sum(), ronaldo_events_data_df['assist'].sum()]
+    shots = [messi_events_data_df[messi_events_data_df['eventName'] == 'Shot'].count()['eventName'],
+             ronaldo_events_data_df[ronaldo_events_data_df['eventName'] == 'Shot'].count()['eventName']]
+    free_kicks = [messi_events_data_df[messi_events_data_df['subEventName'] == 'Free kick shot'].count()['subEventName'],
+                ronaldo_events_data_df[ronaldo_events_data_df['subEventName'] == 'Free kick shot'].count()['subEventName']]
+    passes = [messi_events_data_df[messi_events_data_df['eventName'] == 'Pass'].count()['eventName'],
+            ronaldo_events_data_df[ronaldo_events_data_df['eventName'] == 'Pass'].count()['eventName']]
+
+    stats_df = pd.DataFrame([goals, assists, shots, free_kicks, passes],
+                 columns=['Messi', 'Ronaldo'],
+                 index=['Goals', 'Assists', 'Shots', 'Free Kicks', 'Passes'])
+    return stats_df
+
+
 @st.cache(allow_output_mutation=True)
-def get_data(foot):
-
-    #Reading Data
-    messi_events_data_df = pd.read_pickle("./data/messi_events_data_df.pkl")
-    ronaldo_events_data_df = pd.read_pickle("./data/ronaldo_events_data_df.pkl")
-
-    #Dealing with double backslashes
-    messi_events_data_df['label'] = messi_events_data_df['label'].apply(lambda x: bytes(x, encoding='utf-8').decode('unicode-escape'))
-    ronaldo_events_data_df['label'] = ronaldo_events_data_df['label'].apply(lambda x: bytes(x, encoding='utf-8').decode('unicode-escape'))
+def get_data(foot, messi_events_data_df, ronaldo_events_data_df):
 
     if foot == 'Left':
-        messi_events_data_df = messi_events_data_df[messi_events_data_df['left_foot']]
-        ronaldo_events_data_df = ronaldo_events_data_df[ronaldo_events_data_df['left_foot']]
-    if foot == 'Right':
-        messi_events_data_df = messi_events_data_df[messi_events_data_df['right_foot']]
-        ronaldo_events_data_df = ronaldo_events_data_df[ronaldo_events_data_df['right_foot']]
+        messi_events_data_df_foot = messi_events_data_df[messi_events_data_df['left_foot']]
+        ronaldo_events_data_df_foot = ronaldo_events_data_df[ronaldo_events_data_df['left_foot']]
+    elif foot == 'Right':
+        messi_events_data_df_foot = messi_events_data_df[messi_events_data_df['right_foot']]
+        ronaldo_events_data_df_foot = ronaldo_events_data_df[ronaldo_events_data_df['right_foot']]
+    else:
+        messi_events_data_df_foot = messi_events_data_df
+        ronaldo_events_data_df_foot = ronaldo_events_data_df
 
-    barca_matches_dates_df = pd.read_pickle("./data/barca_matches_dates_df.pkl")
-    real_matches_dates_df = pd.read_pickle("./data/real_matches_dates_df.pkl")
-
-    barca_matches_dates_df['match'] = barca_matches_dates_df['match'].apply(lambda x: bytes(x, encoding='utf-8').decode('unicode-escape'))
-    real_matches_dates_df['match'] = real_matches_dates_df['match'].apply(lambda x: bytes(x, encoding='utf-8').decode('unicode-escape'))
-
-    return messi_events_data_df, ronaldo_events_data_df, barca_matches_dates_df, real_matches_dates_df
+    return messi_events_data_df_foot, ronaldo_events_data_df_foot
 
 
 def plot_goals(messi_events_data_df, ronaldo_events_data_df, barca_matches_dates_df, real_matches_dates_df):
@@ -150,6 +157,7 @@ def plot_shots(messi_events_data_df, ronaldo_events_data_df, barca_matches_dates
 
     return bokeh.models.Panel(child=grid, title="Shots")
 
+
 def plot_free_kicks(messi_events_data_df, ronaldo_events_data_df, barca_matches_dates_df, real_matches_dates_df):
 
     #Getting events data positions
@@ -189,7 +197,6 @@ def plot_free_kicks(messi_events_data_df, ronaldo_events_data_df, barca_matches_
     )
 
     return bokeh.models.Panel(child=grid, title="Free Kicks")
-
 
 
 def plot_passes(messi_events_data_df, ronaldo_events_data_df, barca_matches_dates_df, real_matches_dates_df):
@@ -239,23 +246,24 @@ if __name__ == '__main__':
         unsafe_allow_html=True,
     )
 
+    # One-Time, Read in data and do some minor processing
+    messi_events_data_df = pd.read_pickle("./data/messi_events_data_df.pkl")
+    ronaldo_events_data_df = pd.read_pickle("./data/ronaldo_events_data_df.pkl")
+
+    messi_events_data_df['label'] = messi_events_data_df['label'].apply(lambda x: bytes(x, encoding='utf-8').decode('unicode-escape'))
+    ronaldo_events_data_df['label'] = ronaldo_events_data_df['label'].apply(lambda x: bytes(x, encoding='utf-8').decode('unicode-escape'))
+
+    barca_matches_dates_df = pd.read_pickle("./data/barca_matches_dates_df.pkl")
+    real_matches_dates_df = pd.read_pickle("./data/real_matches_dates_df.pkl")
+
+    barca_matches_dates_df['match'] = barca_matches_dates_df['match'].apply(lambda x: bytes(x, encoding='utf-8').decode('unicode-escape'))
+    real_matches_dates_df['match'] = real_matches_dates_df['match'].apply(lambda x: bytes(x, encoding='utf-8').decode('unicode-escape'))
+
     st.sidebar.write(''' ### Foot''')
     foot = st.sidebar.radio("", ('Either Left or Right', 'Left', 'Right'))
-    messi_events_data_df, ronaldo_events_data_df, barca_matches_dates_df, real_matches_dates_df = get_data(foot)
+    messi_events_data_df, ronaldo_events_data_df = get_data(foot, messi_events_data_df, ronaldo_events_data_df)
 
-    #Calculate Stats of both playters and structure them in a Pandas DataFrame
-    goals = [messi_events_data_df['goal'].sum(), ronaldo_events_data_df['goal'].sum()]
-    assists = [messi_events_data_df['assist'].sum(), ronaldo_events_data_df['assist'].sum()]
-    shots = [messi_events_data_df[messi_events_data_df['eventName'] == 'Shot'].count()['eventName'],
-             ronaldo_events_data_df[ronaldo_events_data_df['eventName'] == 'Shot'].count()['eventName']]
-    free_kicks = [messi_events_data_df[messi_events_data_df['subEventName'] == 'Free kick shot'].count()['subEventName'], 
-                ronaldo_events_data_df[ronaldo_events_data_df['subEventName'] == 'Free kick shot'].count()['subEventName']]
-    passes = [messi_events_data_df[messi_events_data_df['eventName'] == 'Pass'].count()['eventName'],
-            ronaldo_events_data_df[ronaldo_events_data_df['eventName'] == 'Pass'].count()['eventName']]
-
-    stats_df = pd.DataFrame([goals, assists, shots, free_kicks, passes],
-                            columns=['Messi', 'Ronaldo'], 
-                            index=['Goals', 'Assists', 'Shots', 'Free Kicks', 'Passes'])
+    stats_df = calculate_stats(messi_events_data_df, ronaldo_events_data_df)
 
     st.sidebar.markdown(""" ### Stats """)
     st.sidebar.dataframe(stats_df)
@@ -280,7 +288,7 @@ if __name__ == '__main__':
             plot_assists(messi_events_data_df, ronaldo_events_data_df, barca_matches_dates_df, real_matches_dates_df),
             plot_shots(messi_events_data_df, ronaldo_events_data_df, barca_matches_dates_df, real_matches_dates_df),
             plot_free_kicks(messi_events_data_df, ronaldo_events_data_df, barca_matches_dates_df, real_matches_dates_df),
-            plot_passes(messi_events_data_df, ronaldo_events_data_df, barca_matches_dates_df, real_matches_dates_df),
+            # plot_passes(messi_events_data_df, ronaldo_events_data_df, barca_matches_dates_df, real_matches_dates_df),
         ]
     )
     st.bokeh_chart(tabs)
